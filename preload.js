@@ -3,34 +3,35 @@ const fs = require('fs')
 const cp = require('child_process')
 let bookmarksDataCache = null
 
-function getBookmarks (dataDir, browser, iconName) {
+function getBookmarks (dataDir, browser) {
   const profiles = ['Default', 'Profile 3', 'Profile 2', 'Profile 1']
   const profile = profiles.find(profile => fs.existsSync(path.join(dataDir, profile, 'Bookmarks')))
   if (!profile) return []
-  const icon = 'file://' + path.join(dataDir, profile, iconName)
   const bookmarkPath = path.join(dataDir, profile, 'Bookmarks')
   const bookmarksData = []
+  const icon = browser + '.png'
   try {
     const data = JSON.parse(fs.readFileSync(bookmarkPath, 'utf-8'))
-    const getUrlData = (item) => {
+    const getUrlData = (item, folder) => {
       if (!item || !Array.isArray(item.children)) return
       item.children.forEach(c => {
         if (c.type === 'url') {
           bookmarksData.push({
+            addAt: parseInt(c.date_added),
+            title: c.name || '',
+            description: (folder ? '「' + folder + '」' : '') + c.url,
+            url: c.url,
             browser,
-            lowTitle: c.name.toLowerCase(),
-            title: c.name,
-            description: c.url,
             icon
           })
         } else if (c.type === 'folder') {
-          getUrlData(c)
+          getUrlData(c, folder ? folder + ' - ' + c.name : c.name)
         }
       })
     }
-    getUrlData(data.roots.bookmark_bar)
-    getUrlData(data.roots.other)
-    getUrlData(data.roots.synced)
+    getUrlData(data.roots.bookmark_bar, '')
+    getUrlData(data.roots.other, '')
+    getUrlData(data.roots.synced, '')
   } catch (e) {}
   return bookmarksData
 }
@@ -49,9 +50,9 @@ function openUrlByChrome (url) {
     return
   }
   if (process.platform === 'darwin') {
-    const chromeApp = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    const chromeApp = '/Applications/Google Chrome.app'
     if (fs.existsSync(chromeApp)) {
-      cp.spawn(chromeApp, [url], { detached: true })
+      cp.spawn('open', ['-a', chromeApp, url], { detached: true })
     } else {
       window.utools.shellOpenExternal(url)
     }
@@ -68,9 +69,9 @@ function openUrlByEdge (url) {
     return
   }
   if (process.platform === 'darwin') {
-    const edgeApp = '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
+    const edgeApp = '/Applications/Microsoft Edge.app'
     if (fs.existsSync(edgeApp)) {
-      cp.spawn(edgeApp, [url], { detached: true })
+      cp.spawn('open', ['-a', edgeApp, url], { detached: true })
     } else {
       window.utools.shellOpenExternal(url)
     }
@@ -90,26 +91,32 @@ window.exports = {
           edgeDataDir = path.join(process.env.LOCALAPPDATA, 'Microsoft/Edge/User Data')
         } else if (process.platform === 'darwin') {
           chromeDataDir = path.join(window.utools.getPath('appData'), 'Google/Chrome')
-          edgeDataDir = path.join(window.utools.getPath('appData'), 'Microsoft/Edge')
+          edgeDataDir = path.join(window.utools.getPath('appData'), 'Microsoft Edge')
         } else { return }
         if (fs.existsSync(chromeDataDir)) {
-          bookmarksDataCache.push(...getBookmarks(chromeDataDir, 'chrome', 'Google Profile.ico'))
+          bookmarksDataCache.push(...getBookmarks(chromeDataDir, 'chrome'))
         }
         if (fs.existsSync(edgeDataDir)) {
-          bookmarksDataCache.push(...getBookmarks(edgeDataDir, 'edge', 'Edge Profile.ico'))
+          bookmarksDataCache.push(...getBookmarks(edgeDataDir, 'edge'))
+        }
+        if (bookmarksDataCache.length > 0) {
+          bookmarksDataCache = bookmarksDataCache.sort((a, b) => a.addAt - b.addAt)
         }
       },
       search: (action, searchWord, callbackSetList) => {
         if (!searchWord) return callbackSetList()
-        searchWord = searchWord.toLowerCase()
-        return callbackSetList(bookmarksDataCache.filter(x => x.lowTitle.includes(searchWord)))
+        const regexText = searchWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const searchRegex = new RegExp(regexText, 'i')
+        return callbackSetList(bookmarksDataCache.filter(x => (
+          x.title.search(searchRegex) !== -1 || x.description.search(searchRegex) !== -1
+        )))
       },
       select: (action, itemData) => {
         window.utools.hideMainWindow(false)
         if (itemData.browser === 'chrome') {
-          openUrlByChrome(itemData.description)
+          openUrlByChrome(itemData.url)
         } else {
-          openUrlByEdge(itemData.description)
+          openUrlByEdge(itemData.url)
         }
         window.utools.outPlugin()
       }
