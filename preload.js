@@ -3,7 +3,7 @@ const fs = require('fs')
 const cp = require('child_process')
 let bookmarksDataCache = null
 
-function getBookmarks (dataDir, browser) {
+function getBookmarks(dataDir, browser) {
   const profiles = ['Default', 'Profile 3', 'Profile 2', 'Profile 1']
   const profile = profiles.find(profile => fs.existsSync(path.join(dataDir, profile, 'Bookmarks')))
   if (!profile) return []
@@ -32,11 +32,11 @@ function getBookmarks (dataDir, browser) {
     getUrlData(data.roots.bookmark_bar, '')
     getUrlData(data.roots.other, '')
     getUrlData(data.roots.synced, '')
-  } catch (e) {}
+  } catch (e) { }
   return bookmarksData
 }
 
-function openUrlByChrome (url) {
+function openUrlByChrome(url) {
   if (process.platform === 'win32') {
     const suffix = `${path.sep}Google${path.sep}Chrome${path.sep}Application${path.sep}chrome.exe`
     const prefixes = [process.env['PROGRAMFILES(X86)'], process.env.PROGRAMFILES, process.env.LOCALAPPDATA].filter(Boolean)
@@ -59,7 +59,7 @@ function openUrlByChrome (url) {
   }
 }
 
-function openUrlByEdge (url) {
+function openUrlByEdge(url) {
   if (process.platform === 'win32') {
     const args = ['shell:AppsFolder\\Microsoft.MicrosoftEdge_8wekyb3d8bbwe!MicrosoftEdge']
     args.push(url)
