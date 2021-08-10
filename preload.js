@@ -105,10 +105,10 @@ window.exports = {
       },
       search: (action, searchWord, callbackSetList) => {
         if (!searchWord) return callbackSetList()
-        const regexText = searchWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const searchRegex = new RegExp(regexText, 'i')
+
+        lSearchWord = searchWord.toLowerCase()
         return callbackSetList(bookmarksDataCache.filter(x => (
-          x.title.search(searchRegex) !== -1 || x.description.search(searchRegex) !== -1
+          fuzzysearch(lSearchWord, x.title.toLowerCase()) || fuzzysearch(lSearchWord, x.description.toLowerCase())
         )))
       },
       select: (action, itemData) => {
@@ -122,4 +122,26 @@ window.exports = {
       }
     }
   }
+}
+
+// fuzzy match algorithm from https://github.com/bevacqua/fuzzysearch
+function fuzzysearch(needle, haystack) {
+  var hlen = haystack.length;
+  var nlen = needle.length;
+  if (nlen > hlen) {
+    return false;
+  }
+  if (nlen === hlen) {
+    return needle === haystack;
+  }
+  outer: for (var i = 0, j = 0; i < nlen; i++) {
+    var nch = needle.charCodeAt(i);
+    while (j < hlen) {
+      if (haystack.charCodeAt(j++) === nch) {
+        continue outer;
+      }
+    }
+    return false;
+  }
+  return true;
 }
