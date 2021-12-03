@@ -105,7 +105,9 @@ window.exports = {
       },
       search: (action, searchWord, callbackSetList) => {
         if (!searchWord) return callbackSetList()
-        const regexText = searchWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        let regexText = searchWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').split(' ')
+        regexText = regexText.reduce((acc, cur) => `${acc}(?=.*${cur})`, '')
+        regexText = `^${regexText}.*$`
         const searchRegex = new RegExp(regexText, 'i')
         return callbackSetList(bookmarksDataCache.filter(x => (
           x.title.search(searchRegex) !== -1 || x.description.search(searchRegex) !== -1
