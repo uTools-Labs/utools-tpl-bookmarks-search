@@ -104,12 +104,21 @@ window.exports = {
         }
       },
       search: (action, searchWord, callbackSetList) => {
+        searchWord = searchWord.trim()
         if (!searchWord) return callbackSetList()
-        const regexText = searchWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const searchRegex = new RegExp(regexText, 'i')
-        return callbackSetList(bookmarksDataCache.filter(x => (
-          x.title.search(searchRegex) !== -1 || x.description.search(searchRegex) !== -1
-        )))
+        if (/\S\s+\S/.test(searchWord)) {
+          const regexTexts = searchWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').split(/\s+/)
+          const searchRegexs = regexTexts.map(rt => new RegExp(rt, 'i'))
+          return callbackSetList(bookmarksDataCache.filter(x => (
+            !searchRegexs.find(r => x.title.search(r) === -1) || !searchRegexs.find(r => x.description.search(r) === -1)
+          )))
+        } else {
+          const regexText = searchWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const searchRegex = new RegExp(regexText, 'i')
+          return callbackSetList(bookmarksDataCache.filter(x => (
+            x.title.search(searchRegex) !== -1 || x.description.search(searchRegex) !== -1
+          )))
+        }
       },
       select: (action, itemData) => {
         window.utools.hideMainWindow(false)
