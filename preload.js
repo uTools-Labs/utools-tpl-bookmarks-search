@@ -41,7 +41,7 @@ function openUrlByChrome (url) {
     const suffix = `${path.sep}Google${path.sep}Chrome${path.sep}Application${path.sep}chrome.exe`
     const prefixes = [process.env['PROGRAMFILES(X86)'], process.env.PROGRAMFILES, process.env.LOCALAPPDATA].filter(Boolean)
     const prefix = prefixes.find(prefix => fs.existsSync(path.join(prefix, suffix)))
-    const chromeApp = path.join(prefix, suffix)
+    const chromeApp = prefix && path.join(prefix, suffix)
     if (chromeApp) {
       cp.spawn(chromeApp, [url], { detached: true })
     } else {
